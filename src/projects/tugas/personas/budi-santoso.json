@@ -1,0 +1,104 @@
+{
+  "id": "budi-santoso",
+  "name": "Budi Santoso",
+  "age": 24,
+  "location": "Bandung",
+  "archetype": "The Sticky-Note Migrator",
+  "role": "Junior Developer",
+  "avatar": "BS",
+  "quotes": [
+    "Kalau nggak ditulis, pasti lupa.",
+    "Gue cuma butuh yang simpel — buka, tulis, selesai.",
+    "Sticky note di monitor udah penuh, butuh yang digital."
+  ],
+  "trustSignals": {
+    "mustHave": [
+      "Bisa langsung pakai tanpa sign up",
+      "Loading cepat — kalau lambat langsung close",
+      "Tampilan bersih, nggak overwhelming"
+    ],
+    "killsIt": [
+      "Harus bikin akun dulu",
+      "Terlalu banyak fitur di depan",
+      "Iklan atau upsell popup"
+    ]
+  },
+  "bookingBehaviour": {
+    "decisionTiming": "Langsung — kalau ingat harus catat, langsung buka app",
+    "dropOffTrigger": "Form terlalu panjang atau harus scroll untuk submit",
+    "bookingStyle": "Quick capture — judul dulu, detail nanti",
+    "priceRange": "Free — belum mau bayar untuk task manager"
+  },
+  "feedbackHistory": [
+    {
+      "screen": "tugas-home",
+      "date": "2026-04-04",
+      "score": 8,
+      "scoreReason": "Bersih, langsung keliatan task mana yang penting. Filter-nya gampang.",
+      "firstImpression": "Wah, rapi. Langsung tau mana yang harus dikerjain hari ini.",
+      "likes": [
+        "Badge prioritas warna-warni — langsung keliatan mana yang urgent",
+        "Filter All/Active/Done simpel tapi cukup",
+        "Task count di atas — tau progress tanpa hitung manual"
+      ],
+      "missing": [
+        "Belum bisa drag-and-drop untuk reorder",
+        "Nggak ada due date warning kalau sudah dekat"
+      ],
+      "wouldTheyProceed": "Iya, ini yang gue cari. Simpel tapi informatif.",
+      "topChange": "Tambahin indikator kalau due date hari ini atau besok."
+    },
+    {
+      "screen": "tugas-add",
+      "date": "2026-04-04",
+      "score": 7,
+      "scoreReason": "Form-nya cukup simpel. Tapi pengen bisa submit lebih cepat.",
+      "firstImpression": "Oke, straightforward. Tiga field doang.",
+      "likes": [
+        "Priority selector yang visual — nggak perlu dropdown",
+        "Tombol submit gede dan jelas"
+      ],
+      "missing": [
+        "Shortcut keyboard untuk submit (Enter)",
+        "Quick-add mode — ketik judul aja, priority default medium"
+      ],
+      "wouldTheyProceed": "Iya, cuma kadang pengen yang lebih cepat.",
+      "topChange": "Bikin quick-add — satu field, enter, done."
+    },
+    {
+      "screen": "tugas-detail",
+      "date": "2026-04-04",
+      "score": 8,
+      "scoreReason": "Detail lengkap, bisa mark done langsung. Delete ada konfirmasi — bagus.",
+      "firstImpression": "Semua info ada di satu tempat. Nggak perlu back-and-forth.",
+      "likes": [
+        "Toggle complete yang besar dan satisfying",
+        "Delete punya konfirmasi — nggak takut salah hapus",
+        "Priority dan due date keliatan jelas"
+      ],
+      "missing": [
+        "Belum bisa edit inline — harus ke halaman lain"
+      ],
+      "wouldTheyProceed": "Iya, ini halaman yang paling sering dibuka kayaknya.",
+      "topChange": "Inline edit biar nggak perlu navigasi ke form terpisah."
+    },
+    {
+      "screen": "tugas-stats",
+      "date": "2026-04-04",
+      "score": 7,
+      "scoreReason": "Bagus buat weekly review. Tapi pengen lihat trend mingguan.",
+      "firstImpression": "Oh ada stats-nya juga! Nggak expect tapi suka.",
+      "likes": [
+        "Completed vs pending — langsung tau progress",
+        "Priority breakdown bikin sadar kalau kebanyakan 'high'",
+        "Streak counter — motivating"
+      ],
+      "missing": [
+        "Grafik trend mingguan",
+        "Completion rate percentage"
+      ],
+      "wouldTheyProceed": "Iya, bakal cek ini tiap Jumat sore.",
+      "topChange": "Tambahin completion rate dan mini chart trend 7 hari terakhir."
+    }
+  ]
+}

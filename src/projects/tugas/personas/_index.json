@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "purpose": "Persona index for Tugas — simple task manager. Each persona represents a target user archetype."
+  },
+  "personas": [
+    {
+      "id": "budi-santoso",
+      "name": "Budi Santoso",
+      "age": 24,
+      "role": "Junior Developer",
+      "location": "Bandung",
+      "archetype": "The Sticky-Note Migrator",
+      "latestScore": { "score": 8, "screen": "tugas-home" }
+    }
+  ]
+}

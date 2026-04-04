@@ -1,0 +1,96 @@
+.tugas {
+  --tg-bg: #F8FAFC;
+  --tg-surface: #FFFFFF;
+  --tg-primary: #4F46E5;
+  --tg-primary-hover: #4338CA;
+  --tg-primary-light: #EEF2FF;
+  --tg-muted: #94A3B8;
+  --tg-text: #1E293B;
+  --tg-text-secondary: #64748B;
+  --tg-border: #E2E8F0;
+  --tg-success: #10B981;
+  --tg-success-light: #ECFDF5;
+  --tg-warning: #F59E0B;
+  --tg-warning-light: #FFFBEB;
+  --tg-danger: #EF4444;
+  --tg-danger-light: #FEF2F2;
+
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--tg-bg);
+  color: var(--tg-text);
+}
+
+.tugas .tg-card {
+  background: var(--tg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--tg-border);
+}
+
+.tugas .tg-btn-primary {
+  background-color: var(--tg-primary);
+  color: #FFFFFF;
+  border-radius: 10px;
+  height: 48px;
+  font-weight: 600;
+  transition: background-color 150ms;
+}
+
+.tugas .tg-btn-primary:hover {
+  background-color: var(--tg-primary-hover);
+}
+
+.tugas .tg-btn-secondary {
+  background-color: var(--tg-primary-light);
+  color: var(--tg-primary);
+  border-radius: 10px;
+  height: 48px;
+  font-weight: 600;
+  transition: background-color 150ms;
+}
+
+.tugas .tg-input {
+  background: var(--tg-surface);
+  border: 1px solid var(--tg-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--tg-text);
+  outline: none;
+  transition: border-color 150ms;
+  width: 100%;
+  font-size: 15px;
+}
+
+.tugas .tg-input:focus {
+  border-color: var(--tg-primary);
+}
+
+.tugas .tg-input::placeholder {
+  color: var(--tg-muted);
+}
+
+.tugas .tg-badge-high {
+  background: var(--tg-danger-light);
+  color: var(--tg-danger);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.tugas .tg-badge-medium {
+  background: var(--tg-warning-light);
+  color: var(--tg-warning);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.tugas .tg-badge-low {
+  background: var(--tg-primary-light);
+  color: var(--tg-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
