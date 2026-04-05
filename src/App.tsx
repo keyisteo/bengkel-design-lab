@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import './index.css'
 import { LeftPanel } from './components/LeftPanel'
 import { PROJECT_CONFIGS } from './projects/registry'
@@ -57,8 +57,20 @@ export default function App() {
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null)
   const [pending, setPending] = useState<{ x: number; y: number; elementLabel: string; elementClasses: string } | null>(null)
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [rightCollapsed, setRightCollapsed] = useState(false)
 
   const phoneRef = useRef<HTMLDivElement>(null)
+  const centerRef = useRef<HTMLDivElement>(null)
+  const [centerWidth, setCenterWidth] = useState(0)
+
+  useEffect(() => {
+    const el = centerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => setCenterWidth(entries[0].contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const config = PROJECT_CONFIGS[activeProject]
   const ProjectApp = config.component
@@ -108,12 +120,13 @@ export default function App() {
     setHoverRect(null)
   }, [])
 
+  // Use capture phase so we intercept clicks BEFORE child onClick handlers fire
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!annotating) return
     if ((e.target as HTMLElement).closest('[data-annotation-pin]')) return
     if (pending) return
 
-    // Prevent navigation/button actions firing while annotating
+    // Stop event in capture phase — child buttons/links never see it
     e.preventDefault()
     e.stopPropagation()
 
@@ -160,27 +173,56 @@ export default function App() {
     })
   }
 
+  // Web canvas: scale down to fit available center width
+  const WEB_W = 1440
+  const WEB_H = 900
+  const webScale = activeView === 'web' && centerWidth > 0
+    ? Math.min(1, (centerWidth - 48) / WEB_W)
+    : 1
+
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-50">
-      <div className="w-[340px] flex-shrink-0 h-full">
-        <LeftPanel
-          screen={screen}
-          onSelectScreen={setScreen}
-          brand={config.brand}
-          scenarios={config.scenarios}
-          activeScenarioId={activeScenarioId}
-          onScenarioChange={handleScenarioChange}
-          personaIndex={config.personaIndex}
-          personaFiles={config.personaFiles}
-          activeProject={activeProject}
-          onProjectChange={handleProjectChange}
-          projects={PROJECTS}
-          activeView={activeView}
-        />
+      {/* Left panel — collapsible */}
+      <div className={`flex-shrink-0 h-full flex transition-all duration-200 ${leftCollapsed ? 'w-8' : 'w-[340px]'}`}>
+        {leftCollapsed ? (
+          <div className="w-8 h-full flex items-center justify-center bg-zinc-50 border-r border-zinc-200">
+            <button
+              className="text-zinc-400 hover:text-zinc-700 p-1"
+              onClick={() => setLeftCollapsed(false)}
+              title="Expand panel"
+            >
+              ›
+            </button>
+          </div>
+        ) : (
+          <div className="flex-1 relative overflow-hidden">
+            <LeftPanel
+              screen={screen}
+              onSelectScreen={setScreen}
+              brand={config.brand}
+              scenarios={config.scenarios}
+              activeScenarioId={activeScenarioId}
+              onScenarioChange={handleScenarioChange}
+              personaIndex={config.personaIndex}
+              personaFiles={config.personaFiles}
+              activeProject={activeProject}
+              onProjectChange={handleProjectChange}
+              projects={PROJECTS}
+              activeView={activeView}
+            />
+            <button
+              className="absolute top-1/2 -right-3 z-10 w-6 h-6 rounded-full bg-white border border-zinc-200 shadow text-zinc-400 hover:text-zinc-700 flex items-center justify-center text-xs"
+              onClick={() => setLeftCollapsed(true)}
+              title="Collapse panel"
+            >
+              ‹
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mockup area */}
-      <div className="flex-1 h-full flex flex-col items-center justify-center bg-zinc-100 p-6">
+      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-center bg-zinc-100 p-6 min-w-0">
         {/* Top bar */}
         <div className="mb-4 flex items-center gap-3">
           <button
@@ -219,23 +261,51 @@ export default function App() {
           )}
         </div>
 
-        {/* Frame container — overflow-x-auto handles 1440px web canvas */}
-        <div className="overflow-x-auto max-h-full flex items-start justify-center">
+        {/* Frame — mobile fixed size, web scales to fit */}
+        {activeView === 'web' ? (
+          <div
+            className="flex-shrink-0"
+            style={{ width: WEB_W * webScale, height: WEB_H * webScale }}
+          >
+            <div
+              ref={phoneRef}
+              className={`relative shadow-2xl border border-zinc-200 bg-zinc-50 overflow-hidden rounded-xl ${annotating ? 'cursor-crosshair' : ''}`}
+              style={{
+                width: WEB_W,
+                height: WEB_H,
+                transform: `scale(${webScale})`,
+                transformOrigin: 'top left',
+              }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onClickCapture={handleClick}
+            >
+              <div className="h-full overflow-y-auto">
+                <ProjectApp screen={screen} onScreenChange={setScreen} view={activeView} />
+              </div>
+              <AnnotationLayer
+                screen={screen}
+                activeView={activeView}
+                annotations={annotations}
+                hoverRect={hoverRect}
+                pending={pending}
+                onSave={handleSave}
+                onCancelPending={handleCancelPending}
+                onDelete={handleDeleteAnnotation}
+              />
+            </div>
+          </div>
+        ) : (
           <div
             ref={phoneRef}
-            className={`relative flex-shrink-0 shadow-2xl border border-zinc-200 bg-zinc-50 overflow-hidden ${
-              activeView === 'mobile'
-                ? 'w-[375px] h-[812px] rounded-3xl'
-                : 'w-[1440px] h-[900px] rounded-xl'
-            } ${annotating ? 'cursor-crosshair' : ''}`}
+            className={`relative w-[375px] h-[812px] rounded-3xl shadow-2xl border border-zinc-200 bg-zinc-50 overflow-hidden ${annotating ? 'cursor-crosshair' : ''}`}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            onClick={handleClick}
+            onClickCapture={handleClick}
           >
             <div className="h-full overflow-y-auto">
               <ProjectApp screen={screen} onScreenChange={setScreen} view={activeView} />
             </div>
-
             <AnnotationLayer
               screen={screen}
               activeView={activeView}
@@ -247,21 +317,42 @@ export default function App() {
               onDelete={handleDeleteAnnotation}
             />
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Annotation side panel */}
+      {/* Annotation side panel — collapsible */}
       {annotating && (
-        <div className="w-[240px] flex-shrink-0 h-full bg-white border-l border-zinc-200">
-          <AnnotationPanel
-            annotations={annotations}
-            screen={screen}
-            activeView={activeView}
-            projectId={activeProject}
-            onDelete={handleDeleteAnnotation}
-            onClear={handleClearAnnotations}
-            onSaveSession={handleSaveSession}
-          />
+        <div className={`flex-shrink-0 h-full flex transition-all duration-200 ${rightCollapsed ? 'w-8' : 'w-[240px]'}`}>
+          {rightCollapsed ? (
+            <div className="w-8 h-full flex items-center justify-center bg-white border-l border-zinc-200">
+              <button
+                className="text-zinc-400 hover:text-zinc-700 p-1"
+                onClick={() => setRightCollapsed(false)}
+                title="Expand annotations"
+              >
+                ‹
+              </button>
+            </div>
+          ) : (
+            <div className="flex-1 relative overflow-hidden bg-white border-l border-zinc-200">
+              <button
+                className="absolute top-1/2 -left-3 z-10 w-6 h-6 rounded-full bg-white border border-zinc-200 shadow text-zinc-400 hover:text-zinc-700 flex items-center justify-center text-xs"
+                onClick={() => setRightCollapsed(true)}
+                title="Collapse annotations"
+              >
+                ›
+              </button>
+              <AnnotationPanel
+                annotations={annotations}
+                screen={screen}
+                activeView={activeView}
+                projectId={activeProject}
+                onDelete={handleDeleteAnnotation}
+                onClear={handleClearAnnotations}
+                onSaveSession={handleSaveSession}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
