@@ -8,7 +8,7 @@ interface AnnotationPanelProps {
   projectId: string
   onDelete: (id: number) => void
   onClear: () => void
-  onSaveSession: () => void
+  onSaveSession: () => Promise<void>
 }
 
 function formatDate(iso: string): string {
@@ -98,7 +98,7 @@ export function AnnotationPanel({
   }, [projectId])
 
   const handleSaveSession = async () => {
-    onSaveSession()
+    await onSaveSession()
     await fetchSessions()
   }
 

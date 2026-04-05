@@ -14,7 +14,7 @@ interface AnnotationLayerProps {
   activeView: 'mobile' | 'web'
   annotations: Annotation[]
   hoverRect: HoverRect | null
-  pending: { x: number; y: number } | null
+  pending: { x: number; y: number; elementLabel: string; elementClasses: string } | null
   onSave: (comment: string) => void
   onCancelPending: () => void
   onDelete: (id: number) => void
