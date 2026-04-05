@@ -21,6 +21,7 @@ interface PersonaCommon {
   }
   feedbackHistory: Array<{
     screen: string
+    view?: 'mobile' | 'web'
     date: string
     score: number
     scoreReason: string
@@ -78,7 +79,8 @@ export const TUGAS_CONFIG: ProjectConfig = {
     {
       id: 'tugas-happy-path',
       label: 'Happy Path',
-      description: 'Home → Add Task → Home → Detail',
+      description: 'Home → Add Task → Detail',
+      views: ['mobile'],
       steps: [
         { screen: 'tugas-home', label: 'Home' },
         { screen: 'tugas-add', label: 'Tambah' },
@@ -89,8 +91,19 @@ export const TUGAS_CONFIG: ProjectConfig = {
       id: 'tugas-weekly-review',
       label: 'Weekly Review',
       description: 'Home → Stats → Detail',
+      views: ['mobile', 'web'],
       steps: [
         { screen: 'tugas-home', label: 'Home' },
+        { screen: 'tugas-stats', label: 'Stats' },
+        { screen: 'tugas-detail', label: 'Detail' },
+      ],
+    },
+    {
+      id: 'tugas-admin-audit',
+      label: 'Admin Audit',
+      description: 'Stats → Detail (web only)',
+      views: ['web'],
+      steps: [
         { screen: 'tugas-stats', label: 'Stats' },
         { screen: 'tugas-detail', label: 'Detail' },
       ],

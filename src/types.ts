@@ -7,6 +7,24 @@ export interface Scenario {
   label: string
   description: string
   steps: { screen: Screen; label: string }[]
+  views?: ('mobile' | 'web')[]   // defaults to ['mobile'] if absent
+}
+
+export interface Annotation {
+  id: number
+  x: number              // px from left of mockup container
+  y: number              // px from top of mockup container
+  elementLabel: string   // tag + first meaningful class (e.g. "button.bg-indigo-600")
+  elementClasses: string // full space-separated class list for copy output
+  comment: string
+  screen: string
+  view: 'mobile' | 'web'
+}
+
+export interface AnnotationSession {
+  projectId: string
+  savedAt: string          // ISO 8601 timestamp
+  annotations: Annotation[]
 }
 
 export interface Decision {
@@ -86,10 +104,12 @@ export interface LabPersona {
     missing: string[]
     wouldTheyProceed: string
     topChange: string
+    view?: 'mobile' | 'web'   // absent = applies to both / legacy entry
   }>
 }
 
 export interface ProjectAppProps {
   screen?: Screen
   onScreenChange?: (screen: Screen) => void
+  view?: 'mobile' | 'web'
 }

@@ -15,9 +15,10 @@ interface PersonaPanelProps {
   personaFiles: Record<string, LabPersona>
   brand: ProjectBrand
   onSelectScreen: (s: Screen) => void
+  activeView: 'mobile' | 'web'
 }
 
-export function PersonaPanel({ personaIndex, personaFiles, brand, onSelectScreen }: PersonaPanelProps) {
+export function PersonaPanel({ personaIndex, personaFiles, brand, onSelectScreen, activeView }: PersonaPanelProps) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null)
 
@@ -34,16 +35,10 @@ export function PersonaPanel({ personaIndex, personaFiles, brand, onSelectScreen
   }
 
   const SCREEN_LABEL: Record<string, string> = {
-    discover: '1 · Discover',
-    detail: '2 · Activity Detail',
-    booking: '3 · Booking',
-    confirmation: '4 · Confirm',
-    'my-bookings': '5 · My Bookings',
-    'booking-detail': '6 · Booking Detail',
-    'jp-cv-upload': '1 · Upload CV',
-    'jp-aspiration': '2 · Aspirasi',
-    'jp-matchmaking': '3 · Kurasi',
-    'jp-preference': '4 · Pilihan',
+    'tugas-home': '1 · Home',
+    'tugas-add': '2 · Add Task',
+    'tugas-detail': '3 · Detail',
+    'tugas-stats': '4 · Stats',
   }
 
   return (
@@ -142,11 +137,17 @@ export function PersonaPanel({ personaIndex, personaFiles, brand, onSelectScreen
                   </div>
 
                   <div>
+                    {(() => {
+                      const visibleFeedback = full.feedbackHistory.filter(
+                        fb => fb.view === undefined || fb.view === activeView
+                      )
+                      return (
+                    <>
                     <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: theme.textMuted }}>
-                      Feedback history ({full.feedbackHistory.length} session{full.feedbackHistory.length !== 1 ? 's' : ''})
+                      Feedback history ({visibleFeedback.length} session{visibleFeedback.length !== 1 ? 's' : ''})
                     </p>
                     <div className="space-y-2">
-                      {full.feedbackHistory.map((fb, i) => {
+                      {visibleFeedback.map((fb, i) => {
                         const fbKey = `${entry.id}-${i}`
                         const fbOpen = expandedFeedback === fbKey
                         return (
@@ -219,6 +220,9 @@ export function PersonaPanel({ personaIndex, personaFiles, brand, onSelectScreen
                         )
                       })}
                     </div>
+                    </>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>

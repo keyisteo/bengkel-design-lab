@@ -1,3 +1,5 @@
+annotations.db
+
 # Logs
 logs
 *.log
@@ -32,3 +34,7 @@ video/
 
 # Claude Code local settings
 .claude/
+
+# Git worktrees
+.worktrees/
+src/projects/*/annotations/*.json

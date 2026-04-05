@@ -28,6 +28,7 @@ interface LeftPanelProps {
   activeProject: string
   onProjectChange: (id: string) => void
   projects: Array<{ id: string; name: string; tagline: string; accentColor: string; textPrimary: string }>
+  activeView: 'mobile' | 'web'
 }
 
 export function LeftPanel({
@@ -42,6 +43,7 @@ export function LeftPanel({
   activeProject,
   onProjectChange,
   projects,
+  activeView,
 }: LeftPanelProps) {
   const [tab, setTab] = useState<PanelTab>('docs')
   const personaCount = personaIndex.personas.length
@@ -197,6 +199,7 @@ export function LeftPanel({
           personaFiles={personaFiles}
           brand={brand}
           onSelectScreen={(s) => { onSelectScreen(s); setTab('docs') }}
+          activeView={activeView}
         />
       ) : (
         <DocsPanel screen={screen} brand={brand} />
