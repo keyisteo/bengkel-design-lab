@@ -37,3 +37,4 @@ video/
 
 # Git worktrees
 .worktrees/
+src/projects/*/annotations/*.json
