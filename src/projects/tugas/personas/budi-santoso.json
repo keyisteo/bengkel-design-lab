@@ -99,6 +99,42 @@
       ],
       "wouldTheyProceed": "Iya, bakal cek ini tiap Jumat sore.",
       "topChange": "Tambahin completion rate dan mini chart trend 7 hari terakhir."
+    },
+    {
+      "screen": "tugas-stats",
+      "view": "mobile",
+      "date": "2026-04-05",
+      "score": 7,
+      "scoreReason": "Stats are readable on mobile but the charts feel cramped. I'd want to see a weekly streak view too.",
+      "firstImpression": "Looks clean but I have to squint at the numbers.",
+      "likes": ["Quick summary at the top", "Color-coded priority bars"],
+      "missing": ["Weekly streak tracker", "More whitespace between stat rows"],
+      "wouldTheyProceed": "Yes, but would want the charts a bit bigger.",
+      "topChange": "Add a weekly streak counter — I need motivation to keep tasks consistent."
+    },
+    {
+      "screen": "tugas-stats",
+      "view": "web",
+      "date": "2026-04-05",
+      "score": 8,
+      "scoreReason": "On desktop the stats breathe — I can see everything at a glance without scrolling.",
+      "firstImpression": "Feels like a proper dashboard when I have the full width.",
+      "likes": ["Side-by-side stat cards on desktop", "Larger charts", "No need to scroll for the summary"],
+      "missing": ["Export button to download stats as CSV", "Date range filter"],
+      "wouldTheyProceed": "Definitely. This is where I'd actually review my week.",
+      "topChange": "Add an export-to-CSV button — I want to track my productivity in a spreadsheet."
+    },
+    {
+      "screen": "tugas-stats",
+      "view": "web",
+      "date": "2026-04-05",
+      "score": 6,
+      "scoreReason": "As an admin reviewing multiple users' stats, I'd want filters and sorting but the base data is all there.",
+      "firstImpression": "Looks like a personal stats page, not an admin dashboard yet.",
+      "likes": ["Clear completion rate", "Priority breakdown visible"],
+      "missing": ["User filter to see stats per team member", "Sort by completion rate", "Bulk actions"],
+      "wouldTheyProceed": "Only for reviewing my own stats. Not ready for admin use yet.",
+      "topChange": "Add a user selector so I can switch between team members' stats without navigating away."
     }
   ]
 }
