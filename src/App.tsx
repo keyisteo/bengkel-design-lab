@@ -171,7 +171,7 @@ export default function App() {
           activeProject={activeProject}
           onProjectChange={handleProjectChange}
           projects={PROJECTS}
-          {...({ activeView } as any)}
+          activeView={activeView}
         />
       </div>
 
