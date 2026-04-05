@@ -19,6 +19,12 @@ function annotationMiddlewarePlugin(): Plugin {
           req.on('end', () => {
             try {
               const { projectId, annotations } = JSON.parse(body)
+              if (!projectId || typeof projectId !== 'string' || projectId.includes('..')) {
+                res.statusCode = 400
+                res.setHeader('Content-Type', 'application/json')
+                res.end(JSON.stringify({ ok: false, error: 'invalid projectId' }))
+                return
+              }
               const now = new Date()
               const pad = (n: number) => String(n).padStart(2, '0')
               const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}`
