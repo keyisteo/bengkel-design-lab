@@ -113,6 +113,10 @@ export default function App() {
     if ((e.target as HTMLElement).closest('[data-annotation-pin]')) return
     if (pending) return
 
+    // Prevent navigation/button actions firing while annotating
+    e.preventDefault()
+    e.stopPropagation()
+
     const container = phoneRef.current
     if (!container) return
 

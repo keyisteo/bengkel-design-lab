@@ -1,4 +1,3 @@
-import fs from 'fs'
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from '@vitejs/plugin-react'
@@ -9,6 +8,28 @@ function annotationMiddlewarePlugin(): Plugin {
   return {
     name: 'annotation-middleware',
     configureServer(server) {
+      // Lazy-init DB so it only runs in dev
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Database = require('better-sqlite3')
+      const dbPath = path.join(process.cwd(), 'annotations.db')
+      const db = new Database(dbPath)
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS annotation_sessions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id TEXT NOT NULL,
+          saved_at TEXT NOT NULL,
+          annotations TEXT NOT NULL
+        )
+      `)
+
+      const insertSession = db.prepare(
+        'INSERT INTO annotation_sessions (project_id, saved_at, annotations) VALUES (?, ?, ?)'
+      )
+      const listSessions = db.prepare(
+        'SELECT project_id, saved_at, annotations FROM annotation_sessions WHERE project_id = ? ORDER BY saved_at DESC'
+      )
+
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? ''
 
@@ -25,17 +46,10 @@ function annotationMiddlewarePlugin(): Plugin {
                 res.end(JSON.stringify({ ok: false, error: 'invalid projectId' }))
                 return
               }
-              const now = new Date()
-              const pad = (n: number) => String(n).padStart(2, '0')
-              const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}-${pad(now.getMinutes())}`
-              const dir = path.join(process.cwd(), 'src', 'projects', projectId, 'annotations')
-              fs.mkdirSync(dir, { recursive: true })
-              const filePath = path.join(dir, `${timestamp}.json`)
-              const content = { projectId, savedAt: now.toISOString(), annotations }
-              fs.writeFileSync(filePath, JSON.stringify(content, null, 2))
-              const relativePath = path.relative(process.cwd(), filePath)
+              const savedAt = new Date().toISOString()
+              insertSession.run(projectId, savedAt, JSON.stringify(annotations))
               res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ ok: true, path: relativePath }))
+              res.end(JSON.stringify({ ok: true, savedAt }))
             } catch (err) {
               res.statusCode = 500
               res.setHeader('Content-Type', 'application/json')
@@ -49,25 +63,17 @@ function annotationMiddlewarePlugin(): Plugin {
         const getMatch = url.match(/^\/api\/annotations\/([^/?]+)$/)
         if (req.method === 'GET' && getMatch) {
           const projectId = getMatch[1]
-          const dir = path.join(process.cwd(), 'src', 'projects', projectId, 'annotations')
           try {
-            if (!fs.existsSync(dir)) {
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ sessions: [] }))
-              return
-            }
-            const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-            const sessions = files
-              .map(file => {
-                try {
-                  const raw = fs.readFileSync(path.join(dir, file), 'utf-8')
-                  return JSON.parse(raw)
-                } catch {
-                  return null
-                }
-              })
-              .filter(Boolean)
-              .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+            const rows = listSessions.all(projectId) as Array<{
+              project_id: string
+              saved_at: string
+              annotations: string
+            }>
+            const sessions = rows.map(row => ({
+              projectId: row.project_id,
+              savedAt: row.saved_at,
+              annotations: JSON.parse(row.annotations),
+            }))
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ sessions }))
           } catch (err) {

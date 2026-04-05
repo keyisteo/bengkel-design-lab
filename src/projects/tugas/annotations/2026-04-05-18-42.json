@@ -1,0 +1,36 @@
+{
+  "projectId": "tugas",
+  "savedAt": "2026-04-05T11:42:53.249Z",
+  "annotations": [
+    {
+      "id": 1,
+      "x": 9,
+      "y": 133,
+      "elementLabel": "div.px-5",
+      "elementClasses": "px-5 pt-3 pb-2 flex gap-2",
+      "comment": "Hello",
+      "screen": "tugas-home",
+      "view": "mobile"
+    },
+    {
+      "id": 2,
+      "x": 30.38995361328125,
+      "y": 277.3255615234375,
+      "elementLabel": "button.tg-card",
+      "elementClasses": "tg-card p-4 flex items-start gap-3 text-left w-full transition-all active:scale-[0.99]",
+      "comment": "ini apa ya",
+      "screen": "tugas-detail",
+      "view": "mobile"
+    },
+    {
+      "id": 3,
+      "x": 29,
+      "y": 388.5,
+      "elementLabel": "p.text-sm",
+      "elementClasses": "text-sm",
+      "comment": "kok begini",
+      "screen": "tugas-detail",
+      "view": "mobile"
+    }
+  ]
+}
