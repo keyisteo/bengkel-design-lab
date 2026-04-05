@@ -1,15 +1,16 @@
 import path from "path"
+import { createRequire } from "module"
 import tailwindcss from "@tailwindcss/vite"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 
+const require = createRequire(import.meta.url)
+
 function annotationMiddlewarePlugin(): Plugin {
   return {
     name: 'annotation-middleware',
     configureServer(server) {
-      // Lazy-init DB so it only runs in dev
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Database = require('better-sqlite3')
       const dbPath = path.join(process.cwd(), 'annotations.db')
       const db = new Database(dbPath)
