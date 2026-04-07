@@ -1,5 +1,7 @@
 annotations.db
 designlab.db
+designlab.db-shm
+designlab.db-wal
 
 # Logs
 logs
