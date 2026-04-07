@@ -35,8 +35,9 @@ This is the **entry point** for any AI agent working in the Design Lab. It's a n
 | Tugas color tokens, typography, spacing | `src/projects/tugas/DESIGN_TOKENS.md` |
 | Why a Tugas design decision was made | `src/projects/tugas/DECISIONS.md` |
 | How the lab shell works, where to add things | `src/projects/registry.ts` |
-| Shared TypeScript types (Screen, Scenario, ProjectBrand, etc.) | `src/types.ts` |
+| Shared TypeScript types (Screen, Scenario, Annotation, ProjectBrand, etc.) | `src/types.ts` |
 | All screen documentation entries | `src/data/screenDocs.ts` |
+| How annotations are stored and retrieved | `vite.config.ts` (SQLite middleware) |
 
 ---
 
@@ -44,7 +45,7 @@ This is the **entry point** for any AI agent working in the Design Lab. It's a n
 
 | Project | ID | Brand | Scenarios | Screens |
 |---|---|---|---|---|
-| Tugas | `tugas` | Indigo/Slate · Light | Happy Path, Weekly Review | 4 |
+| Tugas | `tugas` | Indigo/Slate · Light | Happy Path (mobile), Weekly Review (mobile+web), Admin Audit (web) | 4 |
 
 ---
 
@@ -52,21 +53,28 @@ This is the **entry point** for any AI agent working in the Design Lab. It's a n
 
 The lab shell (`src/App.tsx`) is a thin orchestrator. It:
 - Reads all projects from `PROJECT_CONFIGS` in `registry.ts`
-- Renders `LeftPanel` with the active project's brand, scenarios, and personas
-- Dynamically renders the active project's component inside the mobile viewport frame
+- Renders `LeftPanel` with the active project's brand, scenarios, personas, and active view
+- Dynamically renders the active project's component inside a viewport frame — mobile (375×812) or web (1440×900, scales to fit)
+- Manages the annotation system: hover highlight, pins, session persistence via SQLite
 
-Per-project data lives in `src/projects/registry.ts` (`PROJECT_CONFIGS`) — brand, scenarios, personas, and the React component. The sidebar components (`LeftPanel`, `DocsPanel`, `PersonaPanel`) receive this data as props.
+Per-project data lives in `src/projects/registry.ts` (`PROJECT_CONFIGS`) — brand, scenarios (with `views`), personas, and the React component. The sidebar components receive this data as props.
 
 ```
 App.tsx
-  └── LeftPanel (brand, scenarios, personas)
-        ├── ProjectSwitcher (reads PROJECT_CONFIGS dynamically)
+  └── LeftPanel (brand, scenarios, personas, activeView)
+        ├── ProjectSwitcher
         ├── ScenarioSelector
         ├── DocsPanel (reads SCREEN_DOCS from data/screenDocs.ts)
-        └── PersonaPanel (reads personaFiles from registry.ts)
+        └── PersonaPanel (filters feedbackHistory by activeView)
 
-  └── [project viewport]
-        └── config.component (dynamically rendered from registry)
+  └── [project viewport — mobile or web frame]
+        ├── config.component (receives screen + view props)
+        └── AnnotationLayer (hover highlight + pins, scoped to screen+view)
+
+  └── AnnotationPanel (sidebar, shown when annotating)
+        ├── Pin list for current screen+view
+        ├── Copy summary (with CSS class selectors for agents)
+        └── Past sessions (SQLite archive, collapsible)
 ```
 
 Adding a new project to the registry automatically:
@@ -80,30 +88,81 @@ Adding a new project to the registry automatically:
 
 ```
 src/
-├── App.tsx                    # Lab shell — dynamic viewport + LeftPanel wiring
-├── types.ts                   # Shared types: Screen, Scenario, Decision, ScreenDoc, LabPersona, ProjectBrand, ProjectAppProps
+├── App.tsx                    # Lab shell — view switcher, annotation wiring, collapsible panels
+├── types.ts                   # Shared types: Screen, Scenario (+ views), Annotation, AnnotationSession,
+│                              #   Decision, ScreenDoc, LabPersona (+ view on feedbackHistory),
+│                              #   ProjectBrand, ProjectAppProps (+ view)
 ├── lib/
 │   └── utils.ts              # Utilities: cn(), isDarkBrand()
 ├── data/
 │   └── screenDocs.ts         # SCREEN_DOCS lookup table — one entry per screen, drives the docs panel
 ├── components/
-│   ├── LeftPanel.tsx         # Full left sidebar — receives brand/scenarios/personas as props
-│   ├── ProjectSwitcher.tsx    # Project dropdown with search — reads PROJECT_CONFIGS dynamically
+│   ├── LeftPanel.tsx         # Full left sidebar — passes activeView down to PersonaPanel
+│   ├── ProjectSwitcher.tsx    # Project dropdown with search
 │   ├── ScenarioSelector.tsx  # Scenario dropdown — brand-aware
-│   ├── DocsPanel.tsx         # Screen docs view — brand-aware (uses accentColor for highlights)
-│   ├── PersonaPanel.tsx      # Persona library — reads from personaFiles (JSON)
+│   ├── DocsPanel.tsx         # Screen docs view
+│   ├── PersonaPanel.tsx      # Persona library — filters feedbackHistory by activeView
+│   ├── AnnotationLayer.tsx   # Hover highlight + numbered pins, scoped to screen+view
+│   ├── AnnotationPanel.tsx   # Pin list, copy (with CSS selectors), save session, past sessions
 │   └── BottomNav.tsx         # Reusable bottom nav for project pages
 └── projects/
-    ├── registry.ts           # ProjectConfig for all projects — brand + scenarios + personas + component
+    ├── registry.ts           # ProjectConfig — brand + scenarios (with views) + personas + component
     └── tugas/                # Example project (fully fleshed)
         ├── index.tsx         # TugasApp + routing
         ├── tugas.css         # CSS tokens scoped under .tugas
         ├── pages/            # All Tugas page components
         ├── data/             # Mock task data
-        └── personas/         # _index.json + budi-santoso.json
+        ├── personas/         # _index.json + budi-santoso.json (view-scoped feedback)
+        └── annotations/      # Folder kept for .gitkeep; actual data goes to annotations.db
 ```
 
 ---
+
+## Multi-View System
+
+Scenarios declare which devices they support via the optional `views` field:
+
+```ts
+// Mobile only (default if views is absent)
+{ id: 'my-flow', views: ['mobile'], steps: [...] }
+
+// Web only
+{ id: 'admin-flow', views: ['web'], steps: [...] }
+
+// Both — view switcher pill appears above mockup
+{ id: 'review-flow', views: ['mobile', 'web'], steps: [...] }
+```
+
+- `activeView` (`'mobile' | 'web'`) is managed in `App.tsx` and resets when the scenario changes
+- `ProjectApp` receives `view` as a prop — use it to conditionally adapt layout if needed
+- Persona `feedbackHistory` entries can include `view?: 'mobile' | 'web'` — entries without `view` show in both modes (legacy/universal)
+
+## Annotation System
+
+The annotation system lets designers and agents mark up the live mockup:
+
+- **Entering annotate mode** — click the "Annotate" button above the mockup; cursor becomes a crosshair
+- **Placing a pin** — hover to highlight an element (inspect-element style), click to drop a pin and type a comment
+- **Click-through prevention** — the frame uses `onClickCapture` so annotate-mode clicks never trigger navigation or button actions
+- **View scoping** — pins are stored with `screen + view`; switching view shows only that view's pins
+- **Session naming** — a name is auto-generated on first pin drop (`sleepy-mango-47` style, adjective-noun-number); editable before saving. The name appears in the copy output so agents have session context.
+- **Save & clear** — "Save session" persists to SQLite and clears the canvas for a fresh start
+- **Simulate past sessions** — expand a past session in the panel and click "Simulate" to reload its pins into the active state. Annotations for screens other than the current one are greyed out (screen may have changed).
+- **Copy format** for agents:
+  ```
+  ## Design Feedback — tugas / tugas-home / mobile
+  Session: sleepy-mango-47
+  Annotated: 2026-04-07T10:22:00.000Z
+
+  1. [button.bg-indigo-600 | classes: bg-indigo-600 text-white rounded-lg px-4 py-2]
+     "The comment text"
+  ```
+  Use the class list to `grep` the component file for the element
+- **Persistence** — "Save session" writes to `annotations.db` (SQLite, gitignored) via a Vite dev middleware at `POST /api/annotations`. Past sessions are fetched from `GET /api/annotations/:projectId`. The DB includes a `name` column.
+
+### Web viewport presets
+
+When in web view, a preset selector appears in the top bar: `768 | 1024 | 1280 | 1440 | 1920 px`. The canvas scales down responsively to fit the available space regardless of which preset is selected. Use smaller presets (768, 1024) on MacBook screens.
 
 ## Important Conventions
 
@@ -161,5 +220,7 @@ Update both the JSON file (`personas/<id>.json`) AND `SCREEN_DOCS.personaFeedbac
 3. **Missing SCREEN_DOCS entry** — docs panel shows "No documentation" until added
 4. **Screen ID collisions** — prefix your project's screens (e.g., `tugas-home`, `myapp-list`)
 5. **Hardcoded dark theme check** — use `isDarkBrand()`, not `brand.id === 'some-project'`
+6. **Scenario without `views`** — omitting `views` defaults to `['mobile']`; add `views: ['web']` or `['mobile', 'web']` explicitly for web or dual-view scenarios
+7. **onClick inside annotate frame** — the frame uses `onClickCapture`; child elements using `e.stopPropagation()` in the capture phase will break annotation. Avoid capture-phase stopPropagation in project components.
 
 See `docs/TROUBLESHOOTING.md` for detailed solutions.

@@ -15,12 +15,16 @@ The name "bengkel" means "workshop" in Indonesian. This is where you tinker.
 ## Features
 
 - **Multi-project switching** — add as many projects as you want, switch between them from a searchable dropdown
-- **Persona feedback system** — proto-personas review your screens with scores, likes, friction points, and top-change requests
+- **Multi-view mockups** — scenarios declare their supported devices: mobile only (375×812), web only (1440×900), or both with a live view switcher. The web canvas scales responsively to your viewport with presets at 768 / 1024 / 1280 / 1440 / 1920px.
+- **Annotation system** — enter annotate mode to hover-highlight any element (inspect-element style), drop numbered pins, and write comments. Each session gets an auto-generated name (`sleepy-mango-47` style) that's editable before saving.
+- **Agent-ready copy** — the copy output includes CSS class selectors and session name so agents can grep the exact element: `[button.bg-indigo-600 | classes: bg-indigo-600 text-white ...]`
+- **Session archive** — save annotation sessions to SQLite (`annotations.db`); past sessions are listed by name and date. Click "Simulate" to reload a past session's pins onto the live mockup — stale pins (screens that may have changed) are visually greyed out.
+- **Persona feedback system** — proto-personas review your screens with scores, likes, friction points, and top-change requests. Feedback can be scoped to a specific view (mobile or web).
 - **Scenario stepper** — define user flows (happy path, edge cases) and step through them with clickable dots
 - **Design token scoping** — each project gets its own CSS custom properties, fully isolated
 - **Screen documentation** — every screen has structured docs: goal, design notes, component list, token references
 - **Decision logging** — track every design decision with rationale, status, and links to the persona feedback that prompted it
-- **Mobile viewport** — 375x812px iPhone frame in the browser, no device needed
+- **Collapsible panels** — collapse the left docs panel and right annotation panel to give the mockup full screen space
 
 ## Quick Start
 
@@ -90,7 +94,9 @@ bengkel-design-lab/
 │   │   ├── ProjectSwitcher.tsx       # Searchable project dropdown
 │   │   ├── ScenarioSelector.tsx      # Scenario dropdown
 │   │   ├── DocsPanel.tsx             # Screen docs view
-│   │   └── PersonaPanel.tsx          # Persona library
+│   │   ├── PersonaPanel.tsx          # Persona library (view-filtered)
+│   │   ├── AnnotationLayer.tsx       # Hover highlight + pin overlay on mockup
+│   │   └── AnnotationPanel.tsx       # Annotation list, copy, session archive
 │   └── projects/
 │       ├── registry.ts               # Project registry — add your project here
 │       └── tugas/                     # Example project (to-do list)
@@ -111,13 +117,14 @@ bengkel-design-lab/
 
 ## Tech Stack
 
-- **Vite** — build tool
+- **Vite** — build tool and dev middleware host
 - **React 18** — UI framework
 - **TypeScript** — type safety
 - **Tailwind CSS v4** — utility styles
 - **shadcn/ui** — component library (in `src/components/ui/`)
 - **Radix UI** — headless components
 - **Lucide** — icons
+- **better-sqlite3** — annotation session persistence (dev only)
 
 ## License
 
