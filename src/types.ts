@@ -24,6 +24,7 @@ export interface Annotation {
 export interface AnnotationSession {
   projectId: string
   savedAt: string          // ISO 8601 timestamp
+  name: string
   annotations: Annotation[]
 }
 

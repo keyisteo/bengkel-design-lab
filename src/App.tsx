@@ -20,6 +20,16 @@ const defaultConfig = PROJECT_CONFIGS[defaultProject]
 
 let nextId = 1
 
+const SESSION_ADJECTIVES = ['sleepy', 'bouncy', 'curious', 'fluffy', 'grumpy', 'spiky', 'fuzzy', 'wobbly', 'sneaky', 'dizzy', 'lumpy', 'cranky', 'wiggly', 'droopy', 'zesty', 'cheeky', 'clumsy', 'dusty', 'frosty', 'jolly']
+const SESSION_NOUNS = ['mango', 'volcano', 'penguin', 'cactus', 'spatula', 'tambourine', 'platypus', 'noodle', 'biscuit', 'goblin', 'pretzel', 'kumquat', 'walrus', 'bonsai', 'burrito', 'marmot', 'turnip', 'satchel', 'lantern', 'yodel']
+
+function generateSessionName(): string {
+  const adj = SESSION_ADJECTIVES[Math.floor(Math.random() * SESSION_ADJECTIVES.length)]
+  const noun = SESSION_NOUNS[Math.floor(Math.random() * SESSION_NOUNS.length)]
+  const num = Math.floor(Math.random() * 90) + 10
+  return `${adj}-${noun}-${num}`
+}
+
 // Elements to skip when building the label (too generic)
 const SKIP_TAGS = new Set(['DIV', 'SPAN', 'SECTION', 'MAIN', 'ARTICLE'])
 
@@ -55,6 +65,7 @@ export default function App() {
   )
   const [annotating, setAnnotating] = useState(false)
   const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [sessionName, setSessionName] = useState<string | null>(null)
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null)
   const [pending, setPending] = useState<{ x: number; y: number; elementLabel: string; elementClasses: string } | null>(null)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
@@ -148,6 +159,8 @@ export default function App() {
 
   const handleSave = (comment: string) => {
     if (!pending) return
+    // Generate session name on first pin drop
+    if (sessionName === null) setSessionName(generateSessionName())
     setAnnotations(prev => [...prev, {
       id: nextId++,
       x: pending.x,
@@ -163,19 +176,36 @@ export default function App() {
 
   const handleCancelPending = () => setPending(null)
   const handleDeleteAnnotation = (id: number) => setAnnotations(prev => prev.filter(a => a.id !== id))
-  const handleClearAnnotations = () => setAnnotations([])
+  const handleClearAnnotations = () => { setAnnotations([]); setSessionName(null) }
 
-  const handleSaveSession = async () => {
+  const handleSaveSession = async (name: string) => {
     await fetch('/api/annotations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId: activeProject, annotations }),
+      body: JSON.stringify({ projectId: activeProject, name, annotations }),
     })
+    // Clear after save
+    setAnnotations([])
+    setSessionName(null)
   }
 
-  // Web canvas: scale down to fit available center width
-  const WEB_W = 1440
-  const WEB_H = 900
+  const handleLoadSession = (loaded: Annotation[]) => {
+    setAnnotations(loaded.map(a => ({ ...a, id: nextId++ })))
+    setSessionName(null)
+  }
+
+  const WEB_PRESETS = [
+    { label: '768',  w: 768,  h: 600 },
+    { label: '1024', w: 1024, h: 768 },
+    { label: '1280', w: 1280, h: 800 },
+    { label: '1440', w: 1440, h: 900 },
+    { label: '1920', w: 1920, h: 1080 },
+  ] as const
+  type WebPreset = typeof WEB_PRESETS[number]['label']
+  const [webPreset, setWebPreset] = useState<WebPreset>('1440')
+  const activePreset = WEB_PRESETS.find(p => p.label === webPreset) ?? WEB_PRESETS[2]
+  const WEB_W = activePreset.w
+  const WEB_H = activePreset.h
   const webScale = activeView === 'web' && centerWidth > 0
     ? Math.min(1, (centerWidth - 48) / WEB_W)
     : 1
@@ -222,9 +252,9 @@ export default function App() {
       </div>
 
       {/* Mockup area */}
-      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-center bg-zinc-100 p-6 min-w-0">
+      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-start bg-zinc-100 pt-5 pb-6 px-6 min-w-0 overflow-y-auto">
         {/* Top bar */}
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-2 flex-shrink-0 w-full">
           <button
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm ${
               annotating
@@ -251,6 +281,25 @@ export default function App() {
                   {v === 'mobile' ? 'Mobile' : 'Web'}
                 </button>
               ))}
+            </div>
+          )}
+
+          {activeView === 'web' && (
+            <div className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg px-1 py-0.5">
+              {WEB_PRESETS.map(p => (
+                <button
+                  key={p.label}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                    webPreset === p.label
+                      ? 'bg-white shadow text-zinc-800'
+                      : 'text-zinc-400 hover:text-zinc-600'
+                  }`}
+                  onClick={() => setWebPreset(p.label)}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <span className="text-[10px] text-zinc-400 pl-1 pr-0.5">px</span>
             </div>
           )}
 
@@ -347,9 +396,12 @@ export default function App() {
                 screen={screen}
                 activeView={activeView}
                 projectId={activeProject}
+                sessionName={sessionName}
+                onNameChange={setSessionName}
                 onDelete={handleDeleteAnnotation}
                 onClear={handleClearAnnotations}
                 onSaveSession={handleSaveSession}
+                onLoadSession={handleLoadSession}
               />
             </div>
           )}
