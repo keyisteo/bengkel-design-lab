@@ -15,10 +15,9 @@ The name "bengkel" means "workshop" in Indonesian. This is where you tinker.
 ## Features
 
 - **Multi-project switching** — add as many projects as you want, switch between them from a searchable dropdown
-- **Multi-view mockups** — scenarios declare their supported devices: mobile only (375×812), web only (1440×900), or both with a live view switcher. The web canvas scales responsively to your viewport with presets at 768 / 1024 / 1280 / 1440 / 1920px.
-- **Annotation system** — enter annotate mode to hover-highlight any element (inspect-element style), drop numbered pins, and write comments. Each session gets an auto-generated name (`sleepy-mango-47` style) that's editable before saving.
-- **Agent-ready copy** — the copy output includes CSS class selectors and session name so agents can grep the exact element: `[button.bg-indigo-600 | classes: bg-indigo-600 text-white ...]`
-- **Session archive** — save annotation sessions to SQLite (`annotations.db`); past sessions are listed by name and date. Click "Simulate" to reload a past session's pins onto the live mockup — stale pins (screens that may have changed) are visually greyed out.
+- **Multi-view mockups** — scenarios declare their supported devices: mobile only (375×812), web only (1440×900), or both with a live view switcher. The web canvas scales responsively to your viewport.
+- **Annotation system** — enter annotate mode to hover-highlight any element (inspect-element style), drop numbered pins, and write comments. Copy the full summary with CSS class selectors so agents know exactly which element to change.
+- **Session archive** — save annotation sessions to SQLite (`annotations.db`); past sessions are listed in the panel by date and are copyable at any time.
 - **Persona feedback system** — proto-personas review your screens with scores, likes, friction points, and top-change requests. Feedback can be scoped to a specific view (mobile or web).
 - **Scenario stepper** — define user flows (happy path, edge cases) and step through them with clickable dots
 - **Design token scoping** — each project gets its own CSS custom properties, fully isolated

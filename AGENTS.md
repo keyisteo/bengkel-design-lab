@@ -145,24 +145,13 @@ The annotation system lets designers and agents mark up the live mockup:
 - **Placing a pin** — hover to highlight an element (inspect-element style), click to drop a pin and type a comment
 - **Click-through prevention** — the frame uses `onClickCapture` so annotate-mode clicks never trigger navigation or button actions
 - **View scoping** — pins are stored with `screen + view`; switching view shows only that view's pins
-- **Session naming** — a name is auto-generated on first pin drop (`sleepy-mango-47` style, adjective-noun-number); editable before saving. The name appears in the copy output so agents have session context.
-- **Save & clear** — "Save session" persists to SQLite and clears the canvas for a fresh start
-- **Simulate past sessions** — expand a past session in the panel and click "Simulate" to reload its pins into the active state. Annotations for screens other than the current one are greyed out (screen may have changed).
 - **Copy format** for agents:
   ```
-  ## Design Feedback — tugas / tugas-home / mobile
-  Session: sleepy-mango-47
-  Annotated: 2026-04-07T10:22:00.000Z
-
-  1. [button.bg-indigo-600 | classes: bg-indigo-600 text-white rounded-lg px-4 py-2]
-     "The comment text"
+  [button.bg-indigo-600 | classes: bg-indigo-600 text-white rounded-lg px-4 py-2]
+  "The comment text"
   ```
   Use the class list to `grep` the component file for the element
-- **Persistence** — "Save session" writes to `annotations.db` (SQLite, gitignored) via a Vite dev middleware at `POST /api/annotations`. Past sessions are fetched from `GET /api/annotations/:projectId`. The DB includes a `name` column.
-
-### Web viewport presets
-
-When in web view, a preset selector appears in the top bar: `768 | 1024 | 1280 | 1440 | 1920 px`. The canvas scales down responsively to fit the available space regardless of which preset is selected. Use smaller presets (768, 1024) on MacBook screens.
+- **Persistence** — "Save session" writes to `annotations.db` (SQLite, gitignored) via a Vite dev middleware at `POST /api/annotations`. Past sessions are fetched from `GET /api/annotations/:projectId`
 
 ## Important Conventions
 
