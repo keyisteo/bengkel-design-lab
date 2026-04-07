@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { isDarkBrand } from '../lib/utils'
-import type { Screen, ProjectBrand } from '../types'
-import { SCREEN_DOCS } from '../data/screenDocs'
+import type { Screen, ScreenDoc, ProjectBrand } from '../types'
 
 function CollapsibleSection({
   title,
@@ -43,9 +42,10 @@ function CollapsibleSection({
 interface DocsPanelProps {
   screen: Screen
   brand: ProjectBrand
+  screenDocs: Record<string, ScreenDoc>
 }
 
-export function DocsPanel({ screen, brand }: DocsPanelProps) {
+export function DocsPanel({ screen, brand, screenDocs }: DocsPanelProps) {
   const isDark = isDarkBrand(brand.bgSubtle)
 
   const theme = {
@@ -59,7 +59,7 @@ export function DocsPanel({ screen, brand }: DocsPanelProps) {
     badgeBg: isDark ? '#3A3A3A' : '#f4f4f5',
   }
 
-  const doc = SCREEN_DOCS[screen]
+  const doc = screenDocs[screen]
   if (!doc) {
     return (
       <div className="flex-1 overflow-y-auto px-5 py-5">
