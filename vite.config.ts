@@ -20,15 +20,18 @@ function annotationMiddlewarePlugin(): Plugin {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           project_id TEXT NOT NULL,
           saved_at TEXT NOT NULL,
+          name TEXT NOT NULL DEFAULT '',
           annotations TEXT NOT NULL
         )
       `)
+      // Add name column if missing (for DBs created before this change)
+      try { db.exec('ALTER TABLE annotation_sessions ADD COLUMN name TEXT NOT NULL DEFAULT ""') } catch { /* already exists */ }
 
       const insertSession = db.prepare(
-        'INSERT INTO annotation_sessions (project_id, saved_at, annotations) VALUES (?, ?, ?)'
+        'INSERT INTO annotation_sessions (project_id, saved_at, name, annotations) VALUES (?, ?, ?, ?)'
       )
       const listSessions = db.prepare(
-        'SELECT project_id, saved_at, annotations FROM annotation_sessions WHERE project_id = ? ORDER BY saved_at DESC'
+        'SELECT project_id, saved_at, name, annotations FROM annotation_sessions WHERE project_id = ? ORDER BY saved_at DESC'
       )
 
       server.middlewares.use((req, res, next) => {
@@ -40,7 +43,7 @@ function annotationMiddlewarePlugin(): Plugin {
           req.on('data', (chunk: Buffer) => { body += chunk.toString() })
           req.on('end', () => {
             try {
-              const { projectId, annotations } = JSON.parse(body)
+              const { projectId, name, annotations } = JSON.parse(body)
               if (!projectId || typeof projectId !== 'string' || projectId.includes('..')) {
                 res.statusCode = 400
                 res.setHeader('Content-Type', 'application/json')
@@ -48,7 +51,7 @@ function annotationMiddlewarePlugin(): Plugin {
                 return
               }
               const savedAt = new Date().toISOString()
-              insertSession.run(projectId, savedAt, JSON.stringify(annotations))
+              insertSession.run(projectId, savedAt, name ?? '', JSON.stringify(annotations))
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify({ ok: true, savedAt }))
             } catch (err) {
@@ -68,11 +71,13 @@ function annotationMiddlewarePlugin(): Plugin {
             const rows = listSessions.all(projectId) as Array<{
               project_id: string
               saved_at: string
+              name: string
               annotations: string
             }>
             const sessions = rows.map(row => ({
               projectId: row.project_id,
               savedAt: row.saved_at,
+              name: row.name,
               annotations: JSON.parse(row.annotations),
             }))
             res.setHeader('Content-Type', 'application/json')

@@ -20,6 +20,16 @@ const defaultConfig = PROJECT_CONFIGS[defaultProject]
 
 let nextId = 1
 
+const SESSION_ADJECTIVES = ['sleepy', 'bouncy', 'curious', 'fluffy', 'grumpy', 'spiky', 'fuzzy', 'wobbly', 'sneaky', 'dizzy', 'lumpy', 'cranky', 'wiggly', 'droopy', 'zesty', 'cheeky', 'clumsy', 'dusty', 'frosty', 'jolly']
+const SESSION_NOUNS = ['mango', 'volcano', 'penguin', 'cactus', 'spatula', 'tambourine', 'platypus', 'noodle', 'biscuit', 'goblin', 'pretzel', 'kumquat', 'walrus', 'bonsai', 'burrito', 'marmot', 'turnip', 'satchel', 'lantern', 'yodel']
+
+function generateSessionName(): string {
+  const adj = SESSION_ADJECTIVES[Math.floor(Math.random() * SESSION_ADJECTIVES.length)]
+  const noun = SESSION_NOUNS[Math.floor(Math.random() * SESSION_NOUNS.length)]
+  const num = Math.floor(Math.random() * 90) + 10
+  return `${adj}-${noun}-${num}`
+}
+
 // Elements to skip when building the label (too generic)
 const SKIP_TAGS = new Set(['DIV', 'SPAN', 'SECTION', 'MAIN', 'ARTICLE'])
 
@@ -55,6 +65,7 @@ export default function App() {
   )
   const [annotating, setAnnotating] = useState(false)
   const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [sessionName, setSessionName] = useState<string | null>(null)
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null)
   const [pending, setPending] = useState<{ x: number; y: number; elementLabel: string; elementClasses: string } | null>(null)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
@@ -148,6 +159,8 @@ export default function App() {
 
   const handleSave = (comment: string) => {
     if (!pending) return
+    // Generate session name on first pin drop
+    if (sessionName === null) setSessionName(generateSessionName())
     setAnnotations(prev => [...prev, {
       id: nextId++,
       x: pending.x,
@@ -163,17 +176,26 @@ export default function App() {
 
   const handleCancelPending = () => setPending(null)
   const handleDeleteAnnotation = (id: number) => setAnnotations(prev => prev.filter(a => a.id !== id))
-  const handleClearAnnotations = () => setAnnotations([])
+  const handleClearAnnotations = () => { setAnnotations([]); setSessionName(null) }
 
-  const handleSaveSession = async () => {
+  const handleSaveSession = async (name: string) => {
     await fetch('/api/annotations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId: activeProject, annotations }),
+      body: JSON.stringify({ projectId: activeProject, name, annotations }),
     })
+    // Clear after save
+    setAnnotations([])
+    setSessionName(null)
+  }
+
+  const handleLoadSession = (loaded: Annotation[]) => {
+    setAnnotations(loaded.map(a => ({ ...a, id: nextId++ })))
+    setSessionName(null)
   }
 
   const WEB_PRESETS = [
+    { label: '768',  w: 768,  h: 1024 },
     { label: '1024', w: 1024, h: 768 },
     { label: '1280', w: 1280, h: 800 },
     { label: '1440', w: 1440, h: 900 },
@@ -374,9 +396,12 @@ export default function App() {
                 screen={screen}
                 activeView={activeView}
                 projectId={activeProject}
+                sessionName={sessionName}
+                onNameChange={setSessionName}
                 onDelete={handleDeleteAnnotation}
                 onClear={handleClearAnnotations}
                 onSaveSession={handleSaveSession}
+                onLoadSession={handleLoadSession}
               />
             </div>
           )}
