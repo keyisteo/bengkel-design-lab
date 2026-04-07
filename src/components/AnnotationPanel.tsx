@@ -84,8 +84,8 @@ export function AnnotationPanel({
     try {
       const res = await fetch(`/api/annotations/${projectId}`)
       if (res.ok) {
-        const data: AnnotationSession[] = await res.json()
-        setSessions(data)
+        const data = await res.json()
+        setSessions(data.sessions ?? [])
       }
     } catch {
       // silently ignore fetch failures (dev / offline)
