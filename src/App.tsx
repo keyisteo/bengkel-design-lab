@@ -195,7 +195,7 @@ export default function App() {
   }
 
   const WEB_PRESETS = [
-    { label: '768',  w: 768,  h: 1024 },
+    { label: '768',  w: 768,  h: 600 },
     { label: '1024', w: 1024, h: 768 },
     { label: '1280', w: 1280, h: 800 },
     { label: '1440', w: 1440, h: 900 },
@@ -252,9 +252,9 @@ export default function App() {
       </div>
 
       {/* Mockup area */}
-      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-center bg-zinc-100 p-6 min-w-0">
+      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-start bg-zinc-100 pt-5 pb-6 px-6 min-w-0 overflow-y-auto">
         {/* Top bar */}
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-2 flex-shrink-0 w-full">
           <button
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm ${
               annotating
