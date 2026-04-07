@@ -173,9 +173,17 @@ export default function App() {
     })
   }
 
-  // Web canvas: scale down to fit available center width
-  const WEB_W = 1440
-  const WEB_H = 900
+  const WEB_PRESETS = [
+    { label: '1024', w: 1024, h: 768 },
+    { label: '1280', w: 1280, h: 800 },
+    { label: '1440', w: 1440, h: 900 },
+    { label: '1920', w: 1920, h: 1080 },
+  ] as const
+  type WebPreset = typeof WEB_PRESETS[number]['label']
+  const [webPreset, setWebPreset] = useState<WebPreset>('1440')
+  const activePreset = WEB_PRESETS.find(p => p.label === webPreset) ?? WEB_PRESETS[2]
+  const WEB_W = activePreset.w
+  const WEB_H = activePreset.h
   const webScale = activeView === 'web' && centerWidth > 0
     ? Math.min(1, (centerWidth - 48) / WEB_W)
     : 1
@@ -251,6 +259,25 @@ export default function App() {
                   {v === 'mobile' ? 'Mobile' : 'Web'}
                 </button>
               ))}
+            </div>
+          )}
+
+          {activeView === 'web' && (
+            <div className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg px-1 py-0.5">
+              {WEB_PRESETS.map(p => (
+                <button
+                  key={p.label}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                    webPreset === p.label
+                      ? 'bg-white shadow text-zinc-800'
+                      : 'text-zinc-400 hover:text-zinc-600'
+                  }`}
+                  onClick={() => setWebPreset(p.label)}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <span className="text-[10px] text-zinc-400 pl-1 pr-0.5">px</span>
             </div>
           )}
 
