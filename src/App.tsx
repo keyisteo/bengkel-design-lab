@@ -1,24 +1,32 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import './index.css'
 import { LeftPanel } from './components/LeftPanel'
-import { PROJECT_CONFIGS } from './projects/registry'
+import { PROJECT_COMPONENTS } from './projects/registry'
+import { useProjects, useProjectDetail, usePersonas, useScreenDocs, useReviews, useInternalPersonas } from './hooks/use-project-data'
 import { AnnotationLayer } from './components/AnnotationLayer'
 import type { HoverRect } from './components/AnnotationLayer'
 import { AnnotationPanel } from './components/AnnotationPanel'
 import type { Annotation, ScenarioId } from './types'
 
-const PROJECTS = Object.values(PROJECT_CONFIGS).map((c) => ({
-  id: c.id,
-  name: c.brand.name,
-  tagline: c.brand.tagline,
-  accentColor: c.brand.accentColor,
-  textPrimary: c.brand.textPrimary,
-}))
-
-const defaultProject = Object.keys(PROJECT_CONFIGS)[0]
-const defaultConfig = PROJECT_CONFIGS[defaultProject]
-
 let nextId = 1
+
+const SESSION_ADJECTIVES = ['sleepy', 'bouncy', 'curious', 'fluffy', 'grumpy', 'spiky', 'fuzzy', 'wobbly', 'sneaky', 'dizzy', 'lumpy', 'cranky', 'wiggly', 'droopy', 'zesty', 'cheeky', 'clumsy', 'dusty', 'frosty', 'jolly']
+const SESSION_NOUNS = ['mango', 'volcano', 'penguin', 'cactus', 'spatula', 'tambourine', 'platypus', 'noodle', 'biscuit', 'goblin', 'pretzel', 'kumquat', 'walrus', 'bonsai', 'burrito', 'marmot', 'turnip', 'satchel', 'lantern', 'yodel']
+
+function generateSessionName(): string {
+  const adj = SESSION_ADJECTIVES[Math.floor(Math.random() * SESSION_ADJECTIVES.length)]
+  const noun = SESSION_NOUNS[Math.floor(Math.random() * SESSION_NOUNS.length)]
+  const num = Math.floor(Math.random() * 90) + 10
+  return `${adj}-${noun}-${num}`
+}
+
+const WEB_PRESETS = [
+  { label: '768',  w: 768,  h: 600 },
+  { label: '1024', w: 1024, h: 768 },
+  { label: '1280', w: 1280, h: 800 },
+  { label: '1440', w: 1440, h: 900 },
+  { label: '1920', w: 1920, h: 1080 },
+] as const
 
 // Elements to skip when building the label (too generic)
 const SKIP_TAGS = new Set(['DIV', 'SPAN', 'SECTION', 'MAIN', 'ARTICLE'])
@@ -36,7 +44,6 @@ function getElementInfo(el: Element): { label: string; classes: string } {
 
 function getBestTarget(el: HTMLElement, containerEl: HTMLElement): HTMLElement {
   let current: HTMLElement | null = el
-  // Walk up until we hit the container — find the most specific non-trivial element
   while (current && current !== containerEl) {
     const tag = current.tagName
     if (!SKIP_TAGS.has(tag)) return current
@@ -47,14 +54,34 @@ function getBestTarget(el: HTMLElement, containerEl: HTMLElement): HTMLElement {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState(defaultConfig.scenarios[0].steps[0].screen)
-  const [activeProject, setActiveProject] = useState(defaultProject)
-  const [activeScenarioId, setActiveScenarioId] = useState(defaultConfig.scenarios[0].id)
-  const [activeView, setActiveView] = useState<'mobile' | 'web'>(
-    defaultConfig.scenarios[0].views?.[0] ?? 'mobile'
-  )
+  // ── Data from SQLite API ────────────────────────────────
+  const { projects: allProjects, loading: projectsLoading } = useProjects()
+
+  // Only show projects that have a registered component
+  const availableProjects = allProjects.filter(p => p.id in PROJECT_COMPONENTS)
+
+  const [activeProject, setActiveProject] = useState<string>('')
+  const projectDetail = useProjectDetail(activeProject || '__none__')
+  const personaData = usePersonas(activeProject || '__none__')
+  const screenDocsData = useScreenDocs(activeProject || '__none__')
+  const reviewsData = useReviews(activeProject || '__none__')
+  const internalPersonasData = useInternalPersonas()
+
+  // Set initial project once loaded
+  useEffect(() => {
+    if (availableProjects.length > 0 && !activeProject) {
+      setActiveProject(availableProjects[0].id)
+    }
+  }, [availableProjects, activeProject])
+
+  // ── Local UI state ──────────────────────────────────────
+  const [screen, setScreen] = useState('')
+  const [activeScenarioId, setActiveScenarioId] = useState('')
+  const [activeView, setActiveView] = useState<'mobile' | 'web'>('mobile')
   const [annotating, setAnnotating] = useState(false)
   const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [sessionName, setSessionName] = useState<string | null>(null)
+  const [webPreset, setWebPreset] = useState('1440')
   const [hoverRect, setHoverRect] = useState<HoverRect | null>(null)
   const [pending, setPending] = useState<{ x: number; y: number; elementLabel: string; elementClasses: string } | null>(null)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
@@ -72,27 +99,51 @@ export default function App() {
     return () => ro.disconnect()
   }, [])
 
-  const config = PROJECT_CONFIGS[activeProject]
-  const ProjectApp = config.component
+  // ── Derived data ────────────────────────────────────────
+  const config = projectDetail.data
+  const scenarios = config?.scenarios ?? []
+  const brand = config?.brand
+  const personaIndex = personaData.data?.index ?? { _meta: { purpose: '' }, personas: [] }
+  const personaFiles = personaData.data?.files ?? {}
+  const screenDocs = screenDocsData.docs
+  const reviews = reviewsData.reviews
+  const internalPersonaIndex = internalPersonasData.data?.index ?? { _meta: { purpose: '' }, personas: [] }
+  const internalPersonaFiles = internalPersonasData.data?.files ?? {}
 
-  // Derive the active scenario to check its views
-  const activeScenario = config.scenarios.find(s => s.id === activeScenarioId) ?? config.scenarios[0]
-  const scenarioViews = activeScenario.views ?? ['mobile']
+  // Initialize screen/scenario when project data loads
+  useEffect(() => {
+    if (scenarios.length > 0 && !activeScenarioId) {
+      setActiveScenarioId(scenarios[0].id)
+      setScreen(scenarios[0].steps[0]?.screen ?? '')
+      setActiveView(scenarios[0].views?.[0] ?? 'mobile')
+    }
+  }, [scenarios, activeScenarioId])
+
+  const activeScenario = scenarios.find(s => s.id === activeScenarioId) ?? scenarios[0]
+  const scenarioViews = activeScenario?.views ?? ['mobile']
   const hasMultipleViews = scenarioViews.includes('mobile') && scenarioViews.includes('web')
 
+  const ProjectApp = activeProject ? PROJECT_COMPONENTS[activeProject] : null
+  const projectsList = availableProjects.map(p => ({
+    id: p.id,
+    name: p.name,
+    tagline: p.brand.tagline ?? '',
+    accentColor: p.brand.accentColor,
+    textPrimary: p.brand.textPrimary,
+  }))
+
+  // ── Handlers ────────────────────────────────────────────
   const handleProjectChange = (p: string) => {
     setActiveProject(p)
-    const newConfig = PROJECT_CONFIGS[p]
-    const firstScenario = newConfig.scenarios[0]
-    setActiveScenarioId(firstScenario.id)
-    setScreen(firstScenario.steps[0].screen)
-    setActiveView(firstScenario.views?.[0] ?? 'mobile')
+    setActiveScenarioId('')
+    setScreen('')
+    setActiveView('mobile')
   }
 
   const handleScenarioChange = (id: ScenarioId) => {
     setActiveScenarioId(id)
-    const newScenario = config.scenarios.find(s => s.id === id) ?? config.scenarios[0]
-    setActiveView(newScenario.views?.[0] ?? 'mobile')
+    const newScenario = scenarios.find(s => s.id === id) ?? scenarios[0]
+    setActiveView(newScenario?.views?.[0] ?? 'mobile')
   }
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -120,13 +171,11 @@ export default function App() {
     setHoverRect(null)
   }, [])
 
-  // Use capture phase so we intercept clicks BEFORE child onClick handlers fire
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!annotating) return
     if ((e.target as HTMLElement).closest('[data-annotation-pin]')) return
     if (pending) return
 
-    // Stop event in capture phase — child buttons/links never see it
     e.preventDefault()
     e.stopPropagation()
 
@@ -137,7 +186,6 @@ export default function App() {
     const containerRect = container.getBoundingClientRect()
     const elRect = target.getBoundingClientRect()
 
-    // Pin to top-left of the element + small offset
     const x = elRect.left - containerRect.left + 8
     const y = elRect.top - containerRect.top + 8
 
@@ -148,6 +196,7 @@ export default function App() {
 
   const handleSave = (comment: string) => {
     if (!pending) return
+    if (sessionName === null) setSessionName(generateSessionName())
     setAnnotations(prev => [...prev, {
       id: nextId++,
       x: pending.x,
@@ -163,19 +212,36 @@ export default function App() {
 
   const handleCancelPending = () => setPending(null)
   const handleDeleteAnnotation = (id: number) => setAnnotations(prev => prev.filter(a => a.id !== id))
-  const handleClearAnnotations = () => setAnnotations([])
+  const handleClearAnnotations = () => { setAnnotations([]); setSessionName(null) }
 
-  const handleSaveSession = async () => {
+  const handleSaveSession = async (name: string) => {
     await fetch('/api/annotations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId: activeProject, annotations }),
+      body: JSON.stringify({ projectId: activeProject, name, annotations }),
     })
+    setAnnotations([])
+    setSessionName(null)
   }
 
-  // Web canvas: scale down to fit available center width
-  const WEB_W = 1440
-  const WEB_H = 900
+  const handleLoadSession = (loaded: Annotation[]) => {
+    setAnnotations(loaded.map(a => ({ ...a, id: nextId++ })))
+    setSessionName(null)
+  }
+
+  // ── Loading state ───────────────────────────────────────
+  if (projectsLoading || !brand || !ProjectApp) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-zinc-50 text-zinc-400">
+        Loading Design Lab...
+      </div>
+    )
+  }
+
+  // Web viewport presets
+  const activePreset = WEB_PRESETS.find(p => p.label === webPreset) ?? WEB_PRESETS[3]
+  const WEB_W = activePreset.w
+  const WEB_H = activePreset.h
   const webScale = activeView === 'web' && centerWidth > 0
     ? Math.min(1, (centerWidth - 48) / WEB_W)
     : 1
@@ -199,15 +265,20 @@ export default function App() {
             <LeftPanel
               screen={screen}
               onSelectScreen={setScreen}
-              brand={config.brand}
-              scenarios={config.scenarios}
+              brand={brand}
+              scenarios={scenarios}
               activeScenarioId={activeScenarioId}
               onScenarioChange={handleScenarioChange}
-              personaIndex={config.personaIndex}
-              personaFiles={config.personaFiles}
+              personaIndex={personaIndex}
+              personaFiles={personaFiles}
+              internalPersonaIndex={internalPersonaIndex}
+              internalPersonaFiles={internalPersonaFiles}
+              reviews={reviews}
+              onReviewAction={reviewsData.updateStatus}
+              screenDocs={screenDocs}
               activeProject={activeProject}
               onProjectChange={handleProjectChange}
-              projects={PROJECTS}
+              projects={projectsList}
               activeView={activeView}
             />
             <button
@@ -222,9 +293,9 @@ export default function App() {
       </div>
 
       {/* Mockup area */}
-      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-center bg-zinc-100 p-6 min-w-0">
+      <div ref={centerRef} className="flex-1 h-full flex flex-col items-center justify-start bg-zinc-100 pt-5 pb-6 px-6 min-w-0 overflow-y-auto">
         {/* Top bar */}
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-2 flex-shrink-0 w-full">
           <button
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm ${
               annotating
@@ -251,6 +322,25 @@ export default function App() {
                   {v === 'mobile' ? 'Mobile' : 'Web'}
                 </button>
               ))}
+            </div>
+          )}
+
+          {activeView === 'web' && (
+            <div className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg px-1 py-0.5">
+              {WEB_PRESETS.map(p => (
+                <button
+                  key={p.label}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                    webPreset === p.label
+                      ? 'bg-white shadow text-zinc-800'
+                      : 'text-zinc-400 hover:text-zinc-600'
+                  }`}
+                  onClick={() => setWebPreset(p.label)}
+                >
+                  {p.label}
+                </button>
+              ))}
+              <span className="text-[10px] text-zinc-400 pl-1 pr-0.5">px</span>
             </div>
           )}
 
@@ -347,9 +437,12 @@ export default function App() {
                 screen={screen}
                 activeView={activeView}
                 projectId={activeProject}
+                sessionName={sessionName}
+                onNameChange={setSessionName}
                 onDelete={handleDeleteAnnotation}
                 onClear={handleClearAnnotations}
                 onSaveSession={handleSaveSession}
+                onLoadSession={handleLoadSession}
               />
             </div>
           )}

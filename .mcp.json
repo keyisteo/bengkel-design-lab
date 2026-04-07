@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "designlab-persona-review": {
+      "command": "npx",
+      "args": ["tsx", "mcp/persona-review-server.ts"],
+      "cwd": "/Users/keyisteo/designlab"
+    }
+  }
+}

@@ -1,12 +1,26 @@
 import { useState } from 'react'
 import { isDarkBrand } from '../lib/utils'
-import type { Screen, Scenario, ScenarioId, ProjectBrand, LabPersona } from '../types'
+import type { Screen, Scenario, ScenarioId, ScreenDoc, ProjectBrand } from '../types'
+import type { Review } from '../hooks/use-project-data'
 import { ScenarioSelector } from './ScenarioSelector'
 import { ProjectSwitcher } from './ProjectSwitcher'
 import { DocsPanel } from './DocsPanel'
 import { PersonaPanel } from './PersonaPanel'
 
 type PanelTab = 'docs' | 'personas'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PersonaFile = Record<string, any>
+
+type PersonaIndexType = { _meta: { purpose: string }; personas: Array<{
+  id: string
+  name: string
+  age: number
+  role: string
+  location: string
+  archetype: string
+  latestScore: { score: number | null; screen: string | null }
+}> }
 
 interface LeftPanelProps {
   screen: Screen
@@ -15,16 +29,13 @@ interface LeftPanelProps {
   scenarios: Scenario[]
   activeScenarioId: ScenarioId
   onScenarioChange: (id: ScenarioId) => void
-  personaIndex: { _meta: { purpose: string }; personas: Array<{
-    id: string
-    name: string
-    age: number
-    role: string
-    location: string
-    archetype: string
-    latestScore: { score: number | null; screen: string | null }
-  }> }
-  personaFiles: Record<string, LabPersona>
+  personaIndex: PersonaIndexType
+  personaFiles: Record<string, PersonaFile>
+  internalPersonaIndex: PersonaIndexType
+  internalPersonaFiles: Record<string, PersonaFile>
+  reviews: Review[]
+  onReviewAction: (reviewId: number, status: 'accepted' | 'rejected') => void
+  screenDocs: Record<string, ScreenDoc>
   activeProject: string
   onProjectChange: (id: string) => void
   projects: Array<{ id: string; name: string; tagline: string; accentColor: string; textPrimary: string }>
@@ -40,6 +51,11 @@ export function LeftPanel({
   onScenarioChange,
   personaIndex,
   personaFiles,
+  internalPersonaIndex,
+  internalPersonaFiles,
+  reviews,
+  onReviewAction,
+  screenDocs,
   activeProject,
   onProjectChange,
   projects,
@@ -197,12 +213,17 @@ export function LeftPanel({
         <PersonaPanel
           personaIndex={personaIndex}
           personaFiles={personaFiles}
+          internalPersonaIndex={internalPersonaIndex}
+          internalPersonaFiles={internalPersonaFiles}
+          reviews={reviews}
+          onReviewAction={onReviewAction}
           brand={brand}
           onSelectScreen={(s) => { onSelectScreen(s); setTab('docs') }}
           activeView={activeView}
+          screenDocs={screenDocs}
         />
       ) : (
-        <DocsPanel screen={screen} brand={brand} />
+        <DocsPanel screen={screen} brand={brand} screenDocs={screenDocs} />
       )}
 
       <div
